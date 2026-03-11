@@ -46,7 +46,16 @@
 | **drizzle-kit** | `latest` | DB migrations & Drizzle Studio |
 | **@types/papaparse** | `latest` | TypeScript types for PapaParse |
 
----
+## API Routes
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/upload` | Upload CSV, auto-replaces same date |
+| `GET` | `/api/upload` | List all reports with per-table row counts |
+| `GET` | `/api/upload/[id]` | Get single report with data counts |
+| `DELETE` | `/api/upload/[id]` | Delete report + all child data |
+
+> **Note:** The DB client uses `max: 3` connections and `idle_timeout: 20s` to avoid exhausting the local Supabase connection pool. All API queries run sequentially (not parallel) for the same reason.
 
 ## Setup Commands (Exact)
 
