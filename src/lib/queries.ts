@@ -16,7 +16,7 @@ export async function getLatestReport() {
     const [report] = await db
         .select()
         .from(reports)
-        .orderBy(desc(reports.uploadedAt))
+        .orderBy(desc(reports.reportDate))
         .limit(1);
     return report ?? null;
 }

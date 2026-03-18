@@ -397,7 +397,9 @@ export default async function DashboardPage() {
               </Tip>
             </CardTitle>
             <Badge variant="outline" className="border-emerald-400/40 text-emerald-400">
-              {formatNumber(kpi.totalReleased)} Vials
+              {kpi.totalReleased > 0
+                ? `${formatNumber(kpi.totalReleased)} Vials`
+                : `${data.released.length} SKUs`}
             </Badge>
           </div>
         </CardHeader>
@@ -417,7 +419,6 @@ export default async function DashboardPage() {
             </TableHeader>
             <TableBody>
               {data.released
-                .filter((r) => (r.quantityAvailable ?? 0) > 0)
                 .sort((a, b) => (b.quantityAvailable ?? 0) - (a.quantityAvailable ?? 0))
                 .map((r) => (
                   <TableRow key={r.id}>
@@ -425,7 +426,7 @@ export default async function DashboardPage() {
                     <TableCell className="font-mono text-xs">{r.lot ?? "—"}</TableCell>
                     <TableCell>{r.bud ?? "—"}</TableCell>
                     <TableCell className="text-right font-semibold">
-                      {formatNumber(r.quantityAvailable)}
+                      {(r.quantityAvailable ?? 0) > 0 ? formatNumber(r.quantityAvailable) : "—"}
                     </TableCell>
                   </TableRow>
                 ))}
