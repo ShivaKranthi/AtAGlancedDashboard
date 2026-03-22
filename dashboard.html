@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProRx Analytics — At a Glance</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: #1a2035;
+    --bg-card-hover: #1f2847;
+    --border: #2a3454;
+    --text-primary: #f0f4ff;
+    --text-secondary: #8892b0;
+    --text-muted: #5a6380;
+    --accent-blue: #3b82f6;
+    --accent-cyan: #06d6a0;
+    --accent-purple: #8b5cf6;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-pink: #ec4899;
+    --glow-blue: rgba(59, 130, 246, 0.15);
+    --glow-cyan: rgba(6, 214, 160, 0.15);
+    --glow-purple: rgba(139, 92, 246, 0.15);
+    --glow-red: rgba(239, 68, 68, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated BG grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    z-index: 0;
+    animation: gridMove 20s linear infinite;
+  }
+  @keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(60px, 60px); }
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+  }
+  .logo-text h1 {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, #94a3ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .logo-text span {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .report-date {
+    padding: 8px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .report-date .dot {
+    width: 8px; height: 8px;
+    background: var(--accent-cyan);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(6,214,160,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(6,214,160,0); }
+  }
+  .upload-btn {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+  }
+  .upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(59,130,246,0.4);
+  }
+
+  /* Main */
+  .main { padding: 30px 40px; }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 18px;
+    margin-bottom: 30px;
+  }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .kpi-card:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .kpi-card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan)); }
+  .kpi-card:nth-child(2)::before { background: linear-gradient(90deg, var(--accent-cyan), #34d399); }
+  .kpi-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent-orange), var(--accent-red)); }
+  .kpi-card:nth-child(4)::before { background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink)); }
+  .kpi-card:nth-child(5)::before { background: linear-gradient(90deg, var(--accent-red), #f97316); }
+  .kpi-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .kpi-value {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .kpi-card:nth-child(1) .kpi-value { color: var(--accent-blue); }
+  .kpi-card:nth-child(2) .kpi-value { color: var(--accent-cyan); }
+  .kpi-card:nth-child(3) .kpi-value { color: var(--accent-orange); }
+  .kpi-card:nth-child(4) .kpi-value { color: var(--accent-purple); }
+  .kpi-card:nth-child(5) .kpi-value { color: var(--accent-red); }
+  .kpi-change {
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .kpi-change.up { color: var(--accent-cyan); }
+  .kpi-change.down { color: var(--accent-red); }
+
+  /* Section headers */
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Two-column layout */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 30px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 30px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s;
+  }
+  .card:hover {
+    border-color: rgba(59,130,246,0.3);
+  }
+
+  /* Tables */
+  .table-container {
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(42,52,84,0.5);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  tbody tr {
+    transition: all 0.2s;
+  }
+  tbody tr:hover {
+    background: rgba(59,130,246,0.05);
+  }
+  tbody tr:hover td {
+    color: var(--text-primary);
+  }
+
+  /* Status badges */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-released {
+    background: rgba(6,214,160,0.12);
+    color: var(--accent-cyan);
+  }
+  .status-pending {
+    background: rgba(245,158,11,0.12);
+    color: var(--accent-orange);
+  }
+  .status-quarantine {
+    background: rgba(239,68,68,0.12);
+    color: var(--accent-red);
+  }
+  .status-shipped {
+    background: rgba(59,130,246,0.12);
+    color: var(--accent-blue);
+  }
+  .status-critical {
+    background: rgba(239,68,68,0.15);
+    color: var(--accent-red);
+    border: 1px solid rgba(239,68,68,0.3);
+    animation: critPulse 2s ease-in-out infinite;
+  }
+  @keyframes critPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2); }
+    50% { box-shadow: 0 0 0 4px rgba(239,68,68,0); }
+  }
+  .status-low {
+    background: rgba(245,158,11,0.12);
+    color: var(--accent-orange);
+  }
+  .status-ok {
+    background: rgba(6,214,160,0.1);
+    color: var(--accent-cyan);
+  }
+
+  /* Chart placeholders */
+  .chart-area {
+    height: 220px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 20px 0;
+  }
+  .bar {
+    flex: 1;
+    border-radius: 6px 6px 0 0;
+    min-width: 20px;
+    position: relative;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  .bar:hover {
+    filter: brightness(1.2);
+    transform: scaleY(1.05);
+    transform-origin: bottom;
+  }
+  .bar::after {
+    content: attr(data-value);
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .bar:hover::after { opacity: 1; }
+
+  /* Donut chart */
+  .donut-container {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 10px 0;
+  }
+  .donut {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .donut-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .donut-center .num {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .donut-center .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-value {
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Supply gauge bars */
+  .supply-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .supply-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .supply-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    width: 180px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .supply-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .supply-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease;
+  }
+  .supply-days {
+    font-size: 12px;
+    font-weight: 700;
+    width: 50px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Quarantine reasons */
+  .reason-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .reason-item .reason-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .reason-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .reason-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .reason-bar-bg {
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .reason-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+
+  /* Full-width section */
+  .full-width { margin-bottom: 30px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .kpi-strip { grid-template-columns: 1fr 1fr; }
+    .header { padding: 16px 20px; }
+    .main { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">Rx</div>
+      <div class="logo-text">
+        <h1>ProRx Analytics</h1>
+        <span>Compounding Dashboard</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="report-date">
+        <div class="dot"></div>
+        Report: January 20, 2026
+      </div>
+      <button class="upload-btn">⬆ Upload CSV</button>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- KPI STRIP -->
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Released Inventory</div>
+        <div class="kpi-value">12,901</div>
+        <div class="kpi-change up">▲ 8% from last report</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Pending Release</div>
+        <div class="kpi-value">49,950</div>
+        <div class="kpi-change up">▲ 23 lots in pipeline</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">On Schedule</div>
+        <div class="kpi-value">39,360</div>
+        <div class="kpi-change up">▲ 14 batches this week</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Shipped to PerfectRx</div>
+        <div class="kpi-value">35,342</div>
+        <div class="kpi-change up">▲ 24 shipments</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">In Quarantine</div>
+        <div class="kpi-value">24,720</div>
+        <div class="kpi-change down">▼ 11 lots blocked</div>
+      </div>
+    </div>
+
+    <!-- ROW: SUPPLY STATUS + QUARANTINE REASONS -->
+    <div class="grid-2">
+      <!-- DAYS OF SUPPLY AT PERFECTRX -->
+      <div class="card">
+        <div class="section-title">
+          📊 Days of Supply at PerfectRx
+          <span class="badge" style="background:rgba(239,68,68,0.12);color:var(--accent-red);">4 Critical</span>
+        </div>
+        <div class="supply-list">
+          <div class="supply-item">
+            <span class="supply-name">Tirzepatide 72mg/4mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:22%;background:var(--accent-red);"></div></div>
+            <span class="supply-days" style="color:var(--accent-red)">7.8d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">Semaglutide 2.25A</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:22%;background:var(--accent-red);"></div></div>
+            <span class="supply-days" style="color:var(--accent-red)">7.6d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">Sermorelin 15mg/6mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:21%;background:var(--accent-red);"></div></div>
+            <span class="supply-days" style="color:var(--accent-red)">7.3d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">Tirzepatide 9mg/mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:9%;background:var(--accent-red);"></div></div>
+            <span class="supply-days" style="color:var(--accent-red)">3.1d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">NAD+ 1200mg/6mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:33%;background:var(--accent-orange);"></div></div>
+            <span class="supply-days" style="color:var(--accent-orange)">11.7d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">Semaglutide 12.5mg/5mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:45%;background:var(--accent-orange);"></div></div>
+            <span class="supply-days" style="color:var(--accent-orange)">15.8d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">NAD+ 500mg/2.5mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:47%;background:var(--accent-orange);"></div></div>
+            <span class="supply-days" style="color:var(--accent-orange)">16.6d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">Tirzepatide 18mg/4mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:79%;background:var(--accent-cyan);"></div></div>
+            <span class="supply-days" style="color:var(--accent-cyan)">27.9d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">Sermorelin 8mg/3.2mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:90%;background:var(--accent-cyan);"></div></div>
+            <span class="supply-days" style="color:var(--accent-cyan)">31.7d</span>
+          </div>
+          <div class="supply-item">
+            <span class="supply-name">NAD+ 1000mg/10mL</span>
+            <div class="supply-bar-bg"><div class="supply-bar-fill" style="width:100%;background:var(--accent-cyan);"></div></div>
+            <span class="supply-days" style="color:var(--accent-cyan)">75.4d</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUARANTINE ANALYSIS -->
+      <div class="card">
+        <div class="section-title">
+          ⚠️ Quarantine Analysis
+          <span class="badge" style="background:rgba(239,68,68,0.12);color:var(--accent-red);">11 Lots</span>
+        </div>
+        <div class="donut-container">
+          <div class="donut" style="background: conic-gradient(
+            var(--accent-red) 0deg 175deg,
+            var(--accent-orange) 175deg 240deg,
+            var(--accent-purple) 240deg 290deg,
+            var(--accent-blue) 290deg 330deg,
+            var(--accent-pink) 330deg 360deg
+          );">
+            <div style="position:absolute;inset:30px;background:var(--bg-card);border-radius:50%;"></div>
+            <div class="donut-center">
+              <div class="num">24.7K</div>
+              <div class="label">Vials Held</div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-dot" style="background:var(--accent-red);"></div>
+              <span>Low Phenol Potency</span>
+              <span class="legend-value">5 lots</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:var(--accent-orange);"></div>
+              <span>Crimping Issues</span>
+              <span class="legend-value">2 lots</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:var(--accent-purple);"></div>
+              <span>AQL Failures</span>
+              <span class="legend-value">2 lots</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:var(--accent-blue);"></div>
+              <span>Out of Spec (API)</span>
+              <span class="legend-value">1 lot</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:var(--accent-pink);"></div>
+              <span>Bad Crimps (Partial)</span>
+              <span class="legend-value">1 lot</span>
+            </div>
+          </div>
+        </div>
+        <div class="reason-bars" style="margin-top: 20px;">
+          <div class="reason-item">
+            <div class="reason-header">
+              <span class="reason-name">Tirzepatide 72mg/4mL</span>
+              <span class="reason-count">6 lots in quarantine</span>
+            </div>
+            <div class="reason-bar-bg"><div class="reason-bar-fill" style="width:85%;background:linear-gradient(90deg,var(--accent-red),var(--accent-orange));"></div></div>
+          </div>
+          <div class="reason-item">
+            <div class="reason-header">
+              <span class="reason-name">Tirzepatide 54mg/3mL</span>
+              <span class="reason-count">1 lot</span>
+            </div>
+            <div class="reason-bar-bg"><div class="reason-bar-fill" style="width:14%;background:linear-gradient(90deg,var(--accent-red),var(--accent-orange));"></div></div>
+          </div>
+          <div class="reason-item">
+            <div class="reason-header">
+              <span class="reason-name">Other SKUs</span>
+              <span class="reason-count">4 lots</span>
+            </div>
+            <div class="reason-bar-bg"><div class="reason-bar-fill" style="width:57%;background:linear-gradient(90deg,var(--accent-purple),var(--accent-blue));"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW: PRODUCTION PIPELINE VISUAL + TOP SKUs BY DEMAND -->
+    <div class="grid-2">
+      <!-- PIPELINE FLOW -->
+      <div class="card">
+        <div class="section-title">🏭 Production Pipeline (Vials)</div>
+        <div class="chart-area">
+          <div class="bar" data-value="39,360" style="height:60%;background:linear-gradient(180deg,var(--accent-blue),rgba(59,130,246,0.3));"></div>
+          <div class="bar" data-value="49,950" style="height:78%;background:linear-gradient(180deg,var(--accent-cyan),rgba(6,214,160,0.3));"></div>
+          <div class="bar" data-value="12,901" style="height:20%;background:linear-gradient(180deg,var(--accent-purple),rgba(139,92,246,0.3));"></div>
+          <div class="bar" data-value="24,720" style="height:38%;background:linear-gradient(180deg,var(--accent-red),rgba(239,68,68,0.3));"></div>
+          <div class="bar" data-value="35,342" style="height:55%;background:linear-gradient(180deg,var(--accent-orange),rgba(245,158,11,0.3));"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;padding:0 2px;">
+          <span>Scheduled</span>
+          <span>Pending</span>
+          <span>Released</span>
+          <span>Quarantine</span>
+          <span>Shipped</span>
+        </div>
+      </div>
+
+      <!-- TOP SKUs BY RUN RATE -->
+      <div class="card">
+        <div class="section-title">🔥 Top SKUs by 30-Day Demand (PerfectRx)</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Run Rate</th>
+                <th>Stock</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 72mg/4mL</td>
+                <td>32,566</td>
+                <td>5,657</td>
+                <td><span class="status status-critical">⚠ 7.8 days</span></td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Semaglutide 12.5mg/5mL</td>
+                <td>7,494</td>
+                <td>3,936</td>
+                <td><span class="status status-low">15.8 days</span></td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 36mg/2mL</td>
+                <td>5,527</td>
+                <td>501</td>
+                <td><span class="status status-low">16.3 days</span></td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 18mg/4mL</td>
+                <td>5,044</td>
+                <td>4,685</td>
+                <td><span class="status status-ok">27.9 days</span></td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 27mg/mL</td>
+                <td>4,826</td>
+                <td>0</td>
+                <td><span class="status status-low">17.0 days</span></td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Semaglutide 6.75A</td>
+                <td>4,193</td>
+                <td>0</td>
+                <td><span class="status status-low">19.5 days</span></td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Semaglutide 2.25A</td>
+                <td>3,576</td>
+                <td>909</td>
+                <td><span class="status status-critical">⚠ 7.6 days</span></td>
+              </tr>
+              <tr>
+                <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 9mg/mL</td>
+                <td>2,814</td>
+                <td>27</td>
+                <td><span class="status status-critical">⚠ 3.1 days</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOTS PENDING RELEASE TABLE -->
+    <div class="card full-width">
+      <div class="section-title">
+        🕐 Lots Pending Release
+        <span class="badge" style="background:rgba(245,158,11,0.12);color:var(--accent-orange);">23 Lots</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Lot</th>
+              <th>BUD</th>
+              <th>Qty</th>
+              <th>Inspection</th>
+              <th>AQL</th>
+              <th>Label</th>
+              <th>Testing Return</th>
+              <th>Final Plate</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Sermorelin 15mg/6mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01072026@4</td>
+              <td>08/05/2026</td>
+              <td>2,700</td>
+              <td>Jan 19</td>
+              <td>Jan 20</td>
+              <td>Jan 20</td>
+              <td>Jan 12</td>
+              <td>Jan 14</td>
+              <td><span class="status status-pending">Pending</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 72mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01122026@1</td>
+              <td>01/12/2027</td>
+              <td>2,700</td>
+              <td>Jan 20</td>
+              <td>Jan 20</td>
+              <td>Jan 20</td>
+              <td>Jan 19</td>
+              <td>Jan 19</td>
+              <td><span class="status status-pending">Pending</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Semaglutide 4.5mg/2mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01122026@3</td>
+              <td>01/12/2027</td>
+              <td>2,700</td>
+              <td>Jan 20</td>
+              <td>Jan 20</td>
+              <td>Jan 20</td>
+              <td>Jan 19</td>
+              <td>Jan 19</td>
+              <td><span class="status status-pending">Pending</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">MIC</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01122026@4</td>
+              <td>04/12/2026</td>
+              <td>910</td>
+              <td>Jan 20</td>
+              <td>Jan 20</td>
+              <td>Jan 20</td>
+              <td>Jan 19</td>
+              <td>Jan 19</td>
+              <td><span class="status status-pending">Pending</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">NAD+ 1000mg/10mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX12052025@1</td>
+              <td>06/03/2026</td>
+              <td>2,700</td>
+              <td>Jan 27</td>
+              <td>Jan 27</td>
+              <td>Jan 27</td>
+              <td>Dec 10</td>
+              <td>Dec 16</td>
+              <td><span class="status status-pending">Pending</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Glutathione 6000</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01142026@2</td>
+              <td>07/14/2026</td>
+              <td>240</td>
+              <td>Jan 23</td>
+              <td>Jan 23</td>
+              <td>Jan 23</td>
+              <td>Jan 21</td>
+              <td>Jan 21</td>
+              <td><span class="status status-pending">Pending</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- QUARANTINE TABLE -->
+    <div class="card full-width">
+      <div class="section-title">
+        🔴 Lots in Quarantine
+        <span class="badge" style="background:rgba(239,68,68,0.12);color:var(--accent-red);">11 Lots · 24,720 Vials</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Lot</th>
+              <th>Qty</th>
+              <th>Reason</th>
+              <th>Solution</th>
+              <th>Expected Update</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 72mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01022026@1</td>
+              <td>2,700</td>
+              <td><span class="status status-quarantine">Low Phenol Potency</span></td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 9mg/1mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01072026@1</td>
+              <td>2,700</td>
+              <td><span class="status status-quarantine">Partial Bad Crimps</span></td>
+              <td style="color:var(--accent-cyan);">Recrimp</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">NAD+ 1200mg/6mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01092026@2</td>
+              <td>2,700</td>
+              <td><span class="status status-quarantine">Out of Spec – API & Preservative</span></td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 72mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX11212025@1</td>
+              <td>2,700</td>
+              <td><span class="status status-quarantine">Crimping Issues</span></td>
+              <td style="color:var(--accent-cyan);">Inspect & Recrimp</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 45mg/2.5mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX12292025@1</td>
+              <td>2,700</td>
+              <td><span class="status status-quarantine">Low Phenol · Plate Hits</span></td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">MIC</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX12172025@3</td>
+              <td>420</td>
+              <td><span class="status status-quarantine">High AQS</span></td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RECENT SHIPMENTS TABLE -->
+    <div class="card full-width">
+      <div class="section-title">
+        🚚 Recent Shipments to PerfectRx
+        <span class="badge" style="background:rgba(59,130,246,0.12);color:var(--accent-blue);">24 Shipments</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Lot</th>
+              <th>BUD</th>
+              <th>Requested</th>
+              <th>Shipped</th>
+              <th>Ship Date</th>
+              <th>Tracking</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 72mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01052026@3</td>
+              <td>01/05/2027</td>
+              <td>2,757</td>
+              <td>2,757</td>
+              <td>Jan 19</td>
+              <td style="font-size:11px;font-family:monospace;">888030904827</td>
+              <td><span class="status status-shipped">Shipped ✓</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 36mg/2mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01072026@2</td>
+              <td>01/07/2027</td>
+              <td>2,500</td>
+              <td>2,500</td>
+              <td>Jan 19</td>
+              <td style="font-size:11px;font-family:monospace;">888030904827</td>
+              <td><span class="status status-shipped">Shipped ✓</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Semaglutide 6.75mg/1.5mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01092026@4</td>
+              <td>01/09/2027</td>
+              <td>2,500</td>
+              <td>2,731</td>
+              <td>Jan 17</td>
+              <td style="font-size:11px;font-family:monospace;">887991466394</td>
+              <td><span class="status status-shipped">Shipped ✓</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 72mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01052026@1</td>
+              <td>01/05/2026</td>
+              <td>2,753</td>
+              <td>2,753</td>
+              <td>Jan 14</td>
+              <td style="font-size:11px;font-family:monospace;">887898611167</td>
+              <td><span class="status status-shipped">Shipped ✓</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 18mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01062026@1</td>
+              <td>01/06/2026</td>
+              <td>2,500</td>
+              <td>2,500</td>
+              <td>Jan 15</td>
+              <td style="font-size:11px;font-family:monospace;">887939794799</td>
+              <td><span class="status status-shipped">Shipped ✓</span></td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">NAD+ 1200mg/6mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX12172025@2</td>
+              <td>06/15/2026</td>
+              <td>300</td>
+              <td>300</td>
+              <td>Jan 16</td>
+              <td style="font-size:11px;font-family:monospace;">887974218545</td>
+              <td><span class="status status-shipped">Shipped ✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RELEASED INVENTORY -->
+    <div class="card full-width" style="margin-bottom: 40px;">
+      <div class="section-title">
+        ✅ Released Inventory (Available to Ship)
+        <span class="badge" style="background:rgba(6,214,160,0.12);color:var(--accent-cyan);">12,901 Vials</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Lot(s)</th>
+              <th>BUD</th>
+              <th>Available Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 72mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX12112025@1, PRORX01052026@4</td>
+              <td>12/11/2026</td>
+              <td style="font-weight:600;">3,359</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 27mg/mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX09192025@2, PRORX01062026@4</td>
+              <td>09/19/2026</td>
+              <td style="font-weight:600;">3,098</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tirzepatide 18mg/4mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX01062026@2</td>
+              <td>01/06/2027</td>
+              <td style="font-weight:600;">3,018</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Glutathione 2000mg/10mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX11202025@1</td>
+              <td>04/19/2026</td>
+              <td style="font-weight:600;">1,858</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">NAD+ 1000mg/10mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX11122025@2</td>
+              <td>05/11/2026</td>
+              <td style="font-weight:600;">822</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">NAD+ 1200mg/6mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX12172025@2</td>
+              <td>06/15/2026</td>
+              <td style="font-weight:600;">472</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Gonadorelin 6mg/6mL</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX11172025@2</td>
+              <td>02/15/2026</td>
+              <td style="font-weight:600;">385</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-primary);font-weight:500;">Tri-Mix 2</td>
+              <td style="font-family:monospace;font-size:12px;">PRORX12292025@3</td>
+              <td>03/29/2026</td>
+              <td style="font-weight:600;">378</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer style="padding:20px 40px;border-top:1px solid var(--border);text-align:center;">
+    <p style="font-size:11px;color:var(--text-muted);letter-spacing:1px;">PRORX ANALYTICS DASHBOARD · DATA FROM JANUARY 20, 2026 · STATIC PREVIEW</p>
+  </footer>
+</div>
+
+</body>
+</html>
