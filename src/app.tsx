@@ -1,5 +1,5 @@
 import "./styles.css";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 5;
@@ -16,7 +16,7 @@ function evaluate(guess: string, secret: string): Status[] {
     return result;
 }
 
-export default function App(): JSX.Element {
+export default function App(): React.ReactElement {
     const [secret, setSecret] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [rows, setRows] = useState(() => Array.from({ length: MAX_GUESSES }, () => Array.from({ length: WORD_LENGTH }, () => ({ letter: "", status: "empty" as Status }))));
