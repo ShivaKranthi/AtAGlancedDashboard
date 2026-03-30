@@ -71,11 +71,11 @@ export function ScopeSelector({ availableDates }: ScopeSelectorProps) {
         <>
             <button 
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm text-foreground transition-colors hover:bg-accent lg:flex shadow-sm shadow-black/20"
+                className="flex items-center gap-1.5 md:gap-2 rounded-lg border bg-card px-2.5 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-foreground transition-colors hover:bg-accent shadow-sm shadow-black/20"
             >
-                <CalendarDays className="h-4 w-4 text-indigo-400" />
+                <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4 text-indigo-400" />
                 <span className="font-semibold text-muted-foreground hidden lg:inline">{scopePrefix}</span>
-                <span className="font-bold">{buttonLabel}</span>
+                <span className="font-bold truncate max-w-[120px] sm:max-w-[200px] md:max-w-none">{buttonLabel}</span>
             </button>
 
             <Dialog open={open} onOpenChange={setOpen}>
