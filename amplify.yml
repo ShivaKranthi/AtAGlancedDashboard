@@ -8,6 +8,7 @@ frontend:
         - pnpm install --frozen-lockfile
     build:
       commands:
+        - echo "DATABASE_URL=$DATABASE_URL" >> .env.production
         - pnpm run build
   artifacts:
     baseDirectory: .next
