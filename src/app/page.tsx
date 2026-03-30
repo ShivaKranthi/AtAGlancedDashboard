@@ -1,4 +1,5 @@
-import { getLatestReport, getKpiSummary, getReportData } from "@/lib/queries";
+import { getAvailableDates, getAggregatedReportData, getAggregatedKpiSummary } from "@/lib/queries";
+import { formatScopeLabel, DateScope, getScopeStartEnd } from "@/lib/date-utils";
 import { KpiStrip } from "@/components/kpi-strip";
 import { SupplyGauge } from "@/components/supply-gauge";
 import { QuarantinePanel } from "@/components/quarantine-panel";
@@ -28,15 +29,12 @@ import { Tip } from "@/components/tip";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  let report;
-  try {
-    report = await getLatestReport();
-  } catch {
-    report = null;
-  }
+export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = await props.searchParams;
 
-  if (!report) {
+  // 1. Initial Empty State check
+  const availableDates = await getAvailableDates();
+  if (availableDates.length === 0) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6">
         <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-linear-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
@@ -45,7 +43,7 @@ export default async function DashboardPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold">No Reports Yet</h2>
           <p className="mt-2 max-w-md text-muted-foreground">
-            Upload your first &quot;At a Glance&quot; CSV report to see your
+            Upload your first &quot;At a Glance&quot; CSV/XLSX report to see your
             analytics dashboard.
           </p>
         </div>
@@ -59,19 +57,45 @@ export default async function DashboardPage() {
     );
   }
 
-  const [kpi, data] = await Promise.all([
-    getKpiSummary(report.id),
-    getReportData(report.id),
-  ]);
+  // 2. Default to Day scope with latest date if no params
+  const scope = (searchParams?.scope as DateScope) || "day";
+  const dateStr = (searchParams?.date as string) || availableDates[0];
+  const { start, end } = getScopeStartEnd(dateStr, scope);
+
+  // 3. Fetch aggregated data
+  const aggData = await getAggregatedReportData(start, end);
+  if (!aggData) {
+      return (
+          <div className="flex min-h-[60vh] flex-col items-center justify-center">
+              <h2 className="text-xl font-bold">No data found</h2>
+              <p className="text-muted-foreground mt-2 text-sm text-center">
+                  There is no report data in the selected date range:<br/>
+                  <span className="font-mono">{start} to {end}</span>
+              </p>
+          </div>
+      );
+  }
+
+  const kpi = await getAggregatedKpiSummary(aggData);
+  const data = aggData;
+
+  const enrichedPerfectRx = data.perfectrx.map(item => {
+    const pendingLots = data.pending.filter(p => p.sku === item.sku);
+    const pendingRelease = pendingLots.reduce((sum, p) => sum + (p.quantity ?? 0), 0);
+    return { ...item, pendingRelease };
+  });
+
+  const displayScope = dateStr ? formatScopeLabel(dateStr, scope as DateScope) : `${start} to ${end}`;
+  const scopePrefix = scope === "day" ? "Report" : scope === "week" ? "Week" : "Month";
 
   return (
     <div className="space-y-8">
       {/* Report header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Dashboard Overview</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Report: {report.reportDate} · {report.filename}
+            {scopePrefix}: {displayScope} · Based on {data.reportCount} report sheet(s)
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -91,11 +115,18 @@ export default async function DashboardPage() {
       </div>
 
       {/* KPI cards */}
-      <KpiStrip data={kpi} />
+      <KpiStrip 
+        data={kpi} 
+        scheduledData={data.scheduled} 
+        pendingData={data.pending}
+        releasedData={data.released}
+        shippedData={data.shipped}
+        quarantineData={data.quarantine}
+      />
 
       {/* Supply gauge + Quarantine — side by side */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <SupplyGauge data={data.perfectrx} />
+        <SupplyGauge data={enrichedPerfectRx} />
         <QuarantinePanel data={data.quarantine} />
       </div>
 

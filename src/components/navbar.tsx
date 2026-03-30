@@ -1,9 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Upload, TrendingUp, BookOpen } from "lucide-react";
+import { BarChart3, Upload, TrendingUp, BookOpen, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScopeSelector } from "./scope-selector";
 
 const navItems = [
     { href: "/", label: "Dashboard", icon: BarChart3 },
@@ -12,7 +14,7 @@ const navItems = [
     { href: "/guide", label: "Guide", icon: BookOpen },
 ];
 
-export function Navbar() {
+export function Navbar({ availableDates = [] }: { availableDates?: string[] }) {
     const pathname = usePathname();
 
     return (
@@ -54,10 +56,18 @@ export function Navbar() {
                     })}
                 </nav>
 
-                {/* Status pill */}
-                <div className="hidden items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm text-muted-foreground lg:flex">
-                    <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                    Live
+                {/* Scope Selector - Only show on Dashboard and Trends */}
+                <div className="flex items-center gap-2">
+                    {(pathname === "/" || pathname.startsWith("/trends")) && (
+                        <Suspense fallback={
+                            <div className="flex items-center gap-2 rounded-lg border bg-card px-4 py-2 text-sm text-muted-foreground">
+                                <CalendarDays className="h-4 w-4 animate-pulse text-indigo-400" />
+                                Loading...
+                            </div>
+                        }>
+                            <ScopeSelector availableDates={availableDates} />
+                        </Suspense>
+                    )}
                 </div>
             </div>
         </header>

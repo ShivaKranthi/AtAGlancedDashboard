@@ -24,6 +24,10 @@ interface KpiData {
     criticalSkus: number;
 }
 
+import { ScheduledCalendarModal, type ScheduledItem } from "./scheduled-calendar-modal";
+import { DrilldownModal } from "./drilldown-modal";
+import * as React from "react";
+
 const kpiConfig: {
     key: keyof KpiData;
     label: string;
@@ -91,14 +95,45 @@ const kpiConfig: {
         },
     ];
 
-export function KpiStrip({ data }: { data: KpiData }) {
+export function KpiStrip({ 
+  data, 
+  scheduledData = [],
+  pendingData = [],
+  releasedData = [],
+  shippedData = [],
+  quarantineData = []
+}: { 
+    data: KpiData; 
+    scheduledData?: ScheduledItem[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pendingData?: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    releasedData?: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    shippedData?: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    quarantineData?: any[];
+}) {
+    type ModalType = "none" | "scheduled" | "released" | "pending" | "shipped" | "quarantine";
+    const [activeModal, setActiveModal] = React.useState<ModalType>("none");
+
     return (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {kpiConfig.map((kpi) => {
-                const Icon = kpi.Icon;
-                return (
-                    <Tip key={kpi.key} tip={kpi.tooltip}>
-                        <Card className="group relative cursor-help overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-black/30">
+        <>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+                {kpiConfig.map((kpi) => {
+                    const Icon = kpi.Icon;
+                    
+                    const CardComponent = (
+                        <Card 
+                          className="group relative overflow-hidden transition-all cursor-pointer border-slate-800 hover:border-purple-500/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:-translate-y-1"
+                          onClick={() => {
+                              if (kpi.key === "totalScheduled") setActiveModal("scheduled");
+                              else if (kpi.key === "totalReleased") setActiveModal("released");
+                              else if (kpi.key === "totalPending") setActiveModal("pending");
+                              else if (kpi.key === "totalShipped") setActiveModal("shipped");
+                              else if (kpi.key === "totalQuarantine") setActiveModal("quarantine");
+                          }}
+                        >
                             <div
                                 className={`absolute inset-x-0 top-0 h-[3px] bg-linear-to-r ${kpi.accent}`}
                             />
@@ -123,9 +158,104 @@ export function KpiStrip({ data }: { data: KpiData }) {
                                 </p>
                             </CardContent>
                         </Card>
-                    </Tip>
-                );
-            })}
-        </div>
+                    );
+
+                    return (
+                        <Tip key={kpi.key} tip={kpi.tooltip}>
+                            {CardComponent}
+                        </Tip>
+                    );
+                })}
+            </div>
+
+            <ScheduledCalendarModal 
+                isOpen={activeModal === "scheduled"} 
+                onOpenChange={(v) => !v && setActiveModal("none")} 
+                data={scheduledData} 
+            />
+
+            <DrilldownModal
+                isOpen={activeModal === "released"}
+                onOpenChange={(v) => !v && setActiveModal("none")}
+                title="Released Inventory"
+                description="Products that have passed QC and are available to ship."
+                icon={<PackageCheck className="w-5 h-5 text-blue-400" />}
+                data={releasedData}
+                totalVials={data.totalReleased}
+                totalLots={releasedData.length}
+                skuExtractor={(row) => row.sku}
+                lotExtractor={(row) => row.lot}
+                columns={[
+                    { header: "SKU", accessor: (row) => <span className="font-medium text-white">{row.sku}</span> },
+                    { header: "Lot(s)", accessor: (row) => <span className="font-mono text-xs">{row.lot || "—"}</span> },
+                    { header: "BUD", accessor: (row) => row.bud || "—" },
+                    { header: "Available Qty", accessor: (row) => <span className="font-semibold text-emerald-400">{formatNumber(row.quantityAvailable)}</span>, className: "text-right" }
+                ]}
+            />
+
+            <DrilldownModal
+                isOpen={activeModal === "pending"}
+                onOpenChange={(v) => !v && setActiveModal("none")}
+                title="Pending Release"
+                description="Lots currently going through quality control pipeline."
+                icon={<Clock className="w-5 h-5 text-cyan-400" />}
+                data={pendingData}
+                totalVials={data.totalPending}
+                totalLots={data.lotsPending}
+                skuExtractor={(row) => row.sku}
+                lotExtractor={(row) => row.lot}
+                columns={[
+                    { header: "SKU", accessor: (row) => <span className="font-medium text-white">{row.sku}</span> },
+                    { header: "Lot", accessor: (row) => <span className="font-mono text-xs">{row.lot || "—"}</span> },
+                    { header: "BUD", accessor: (row) => row.bud || "—" },
+                    { header: "Quantity", accessor: (row) => formatNumber(row.quantity), className: "text-right" },
+                    { header: "Inspection", accessor: (row) => row.dateInspection || "—" },
+                    { header: "AQL", accessor: (row) => row.dateAql || "—" },
+                    { header: "Testing", accessor: (row) => row.dateTestingReturn || "—" },
+                    { header: "Plate Check", accessor: (row) => row.dateFinalPlateCheck || "—" }
+                ]}
+            />
+
+            <DrilldownModal
+                isOpen={activeModal === "shipped"}
+                onOpenChange={(v) => !v && setActiveModal("none")}
+                title="Shipped to PerfectRx"
+                description="Shipments fulfilling PerfectRx orders."
+                icon={<Truck className="w-5 h-5 text-orange-400" />}
+                data={shippedData}
+                totalVials={data.totalShipped}
+                totalLots={data.shipmentsCount}
+                skuExtractor={(row) => row.sku}
+                lotExtractor={(row) => row.lot || row.tracking}
+                columns={[
+                    { header: "SKU", accessor: (row) => <span className="font-medium text-white">{row.sku}</span> },
+                    { header: "Lot", accessor: (row) => <span className="font-mono text-xs">{row.lot || "—"}</span> },
+                    { header: "Requested", accessor: (row) => formatNumber(row.shipQuantity), className: "text-right" },
+                    { header: "Shipped", accessor: (row) => <span className="font-semibold text-orange-400">{formatNumber(row.shippedQuantity)}</span>, className: "text-right" },
+                    { header: "Ship Date", accessor: (row) => row.shipDate || "—" },
+                    { header: "Tracking", accessor: (row) => <span className="font-mono text-[10px] text-slate-400">{row.tracking || "—"}</span> }
+                ]}
+            />
+
+            <DrilldownModal
+                isOpen={activeModal === "quarantine"}
+                onOpenChange={(v) => !v && setActiveModal("none")}
+                title="In Quarantine"
+                description="Lots flagged with quality issues and blocked from distribution."
+                icon={<ShieldAlert className="w-5 h-5 text-red-400" />}
+                data={quarantineData}
+                totalVials={data.totalQuarantine}
+                totalLots={data.lotsInQuarantine}
+                skuExtractor={(row) => row.sku}
+                lotExtractor={(row) => row.lot}
+                columns={[
+                    { header: "SKU", accessor: (row) => <span className="font-medium text-white">{row.sku}</span> },
+                    { header: "Lot", accessor: (row) => <span className="font-mono text-xs">{row.lot || "—"}</span> },
+                    { header: "Quantity", accessor: (row) => <span className="font-semibold text-white">{formatNumber(row.quantity)}</span>, className: "text-right" },
+                    { header: "Reason", accessor: (row) => <div className="inline-flex px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-xs font-semibold">{row.reason || "Unknown"}</div> },
+                    { header: "Solution", accessor: (row) => <span className="text-emerald-400 text-sm">{row.solution || "—"}</span> }
+                ]}
+            />
+        </>
     );
 }

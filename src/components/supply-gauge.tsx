@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getSupplyStatus } from "@/lib/utils";
+import { getSupplyStatus, formatNumber } from "@/lib/utils";
 import { Activity } from "lucide-react";
 import { Tip } from "@/components/tip";
 
@@ -12,6 +12,7 @@ interface InventoryItem {
     inTransit: number | null;
     runRate30d: number | null;
     daysSupply: number | null;
+    pendingRelease?: number;
 }
 
 export function SupplyGauge({ data }: { data: InventoryItem[] }) {
@@ -70,7 +71,7 @@ export function SupplyGauge({ data }: { data: InventoryItem[] }) {
                     return (
                         <Tip
                             key={item.sku}
-                            tip={`${item.sku}: ${item.quantity ?? 0} units in stock, ${item.inTransit ?? 0} in transit. 30-day run rate: ${item.runRate30d ?? 0}/day. Status: ${status.label}.`}
+                            tip={`${item.sku}: ${item.quantity ?? 0} units in stock, ${item.inTransit ?? 0} in transit. 30-day run rate: ${item.runRate30d ?? 0}/day. Status: ${status.label}. ${(item.pendingRelease ?? 0) > 0 ? `Includes ${formatNumber(item.pendingRelease)} vials pending release.` : 'No pending release inventory.'}`}
                         >
                             <div className="flex cursor-help items-center gap-3">
                                 <span className="w-44 shrink-0 truncate text-xs text-muted-foreground">
@@ -82,13 +83,18 @@ export function SupplyGauge({ data }: { data: InventoryItem[] }) {
                                         style={{ width: `${barWidth}%` }}
                                     />
                                 </div>
-                                <span
-                                    className={`w-14 text-right text-xs font-bold ${status.color}`}
-                                >
-                                    {item.daysSupply !== null && isFinite(item.daysSupply)
-                                        ? `${item.daysSupply.toFixed(1)}d`
-                                        : "—"}
-                                </span>
+                                <div className="flex w-36 items-center justify-end gap-1.5 whitespace-nowrap text-right">
+                                    <span
+                                        className={`w-12 text-right text-xs font-bold ${status.color}`}
+                                    >
+                                        {item.daysSupply !== null && isFinite(item.daysSupply)
+                                            ? `${item.daysSupply.toFixed(1)}d`
+                                            : "—"}
+                                    </span>
+                                    <span className={`text-[10px] font-medium ${(item.pendingRelease ?? 0) > 0 ? "text-indigo-400" : "text-slate-500 opacity-50"}`}>
+                                        | {(item.pendingRelease ?? 0) > 0 ? `${formatNumber(item.pendingRelease)} pending` : "No pending"}
+                                    </span>
+                                </div>
                             </div>
                         </Tip>
                     );

@@ -519,7 +519,7 @@ function extractPerfectrxInventory(rows: string[][], anchor: SectionAnchor): Per
     let qtyIdx = colMap["qty"] ?? colMap["quantityAvailable"] ?? -1;
     let inTransitIdx = colMap["inTransit"] ?? -1;
     let runRateIdx = colMap["runRate30d"] ?? -1;
-    let daysIdx = daysCol ?? -1;
+    const daysIdx = daysCol ?? -1;
 
     if (daysIdx >= 0 && (!hasQty || !hasInTransit || !hasRunRate)) {
         const gap = daysIdx - skuCol;
