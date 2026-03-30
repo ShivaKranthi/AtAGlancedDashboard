@@ -151,16 +151,59 @@ async function insertParsedReport(
 }
 
 /**
- * Extract report date from a sheet name in MMDDYYYY format.
+ * Extract report date from a sheet name. Handles many formats:
+ * - "03022026" or "3022026"  → MMDDYYYY
+ * - "03-02-2026", "3-2-2026" → M-D-YYYY
+ * - "03/02/2026", "3/2/2026" → M/D/YYYY
+ * - "March 2, 2026", "Mar 2, 2026", "March 2 2026"
+ * - "March 2", "Mar 2" (current year assumed)
+ * - "3-2", "03-02" (current year assumed)
  * Returns "YYYY-MM-DD" string or null if not parseable.
  */
 function dateFromSheetName(name: string): string | null {
-    // Sheet names like "03172026" → "2026-03-17"
-    const m = name.trim().match(/^(\d{2})(\d{2})(\d{4})$/);
-    if (m) {
-        const [, month, day, year] = m;
-        return `${year}-${month}-${day}`;
+    const raw = name.trim();
+
+    // Format 1: exactly 8 digits MMDDYYYY (e.g. "03022026")
+    const m1 = raw.match(/^(\d{2})(\d{2})(\d{4})$/);
+    if (m1) return `${m1[3]}-${m1[1].padStart(2, "0")}-${m1[2].padStart(2, "0")}`;
+
+    // Format 2: 7 digits MDDYYYY (e.g. "3022026")
+    const m2 = raw.match(/^(\d{1})(\d{2})(\d{4})$/);
+    if (m2) return `${m2[3]}-${m2[1].padStart(2, "0")}-${m2[2].padStart(2, "0")}`;
+
+    // Format 3: M-D-YYYY or MM-DD-YYYY or M/D/YYYY
+    const m3 = raw.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (m3) return `${m3[3]}-${m3[1].padStart(2, "0")}-${m3[2].padStart(2, "0")}`;
+
+    // Format 4: "March 2, 2026", "Mar 2 2026", "March 2", "Mar 2"
+    const monthNames: Record<string, string> = {
+        january: "01", february: "02", march: "03", april: "04",
+        may: "05", june: "06", july: "07", august: "08",
+        september: "09", october: "10", november: "11", december: "12",
+        jan: "01", feb: "02", mar: "03", apr: "04",
+        jun: "06", jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+    };
+    
+    // Captures the month, day, and optionally the year
+    const m4 = raw.match(/^([A-Za-z]+)\.?\s+(\d{1,2})(?:[,\s]+(\d{4}))?$/);
+    if (m4) {
+        const [, monStr, day, year] = m4;
+        const mon = monthNames[monStr.toLowerCase()];
+        const y = year || new Date().getFullYear().toString();
+        if (mon) return `${y}-${mon}-${day.padStart(2, "0")}`;
     }
+
+    // Format 5: "3-2" or "03-02", "3/2" (no year)
+    const m5 = raw.match(/^(\d{1,2})[-/](\d{1,2})$/);
+    if (m5) {
+        const year = new Date().getFullYear().toString();
+        return `${year}-${m5[1].padStart(2, "0")}-${m5[2].padStart(2, "0")}`;
+    }
+
+    // Format 6: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+    console.warn(`[upload] Could not parse sheet name as date: "${raw}"`);
     return null;
 }
 

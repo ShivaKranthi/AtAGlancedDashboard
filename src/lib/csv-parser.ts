@@ -211,11 +211,21 @@ function cell(row: string[], colMap: Record<string, number>, field: string): str
 /** Well-known section title strings (prefix-matched, case-insensitive). */
 const SECTION_TITLES: [string, string][] = [
     ["lots pending release", "pending"],
+    ["pending release", "pending"],
     ["released inventory", "released"],
     ["lots in quarantine", "quarantine"],
+    ["in quarantine", "quarantine"],
+    ["quarantine", "quarantine"],
     ["skus on schedule", "scheduled"],
+    ["on schedule", "scheduled"],
     ["ship/shipped to perfect", "shipped"],
+    ["shipped to perfect", "shipped"],
+    ["shipments to perfect", "shipped"],
+    ["ship to perfect", "shipped"],
+    ["shipments", "shipped"],
     ["perfectrx inventory", "perfectrx"],
+    ["perfect rx inventory", "perfectrx"],
+    ["perfectrx", "perfectrx"],
 ];
 
 function matchSectionTitle(cellVal: string): string | null {
@@ -339,7 +349,11 @@ function extractPending(rows: string[][], anchor: SectionAnchor): PendingRelease
         const sku = cell(row, colMap, "sku");
         const lot = cell(row, colMap, "lot");
 
-        if (!sku || !lot || !lot.toUpperCase().startsWith("PRORX")) continue;
+        // Require at least a SKU and lot to create a row
+        if (!sku || !lot) continue;
+        
+        // Skip obvious header re-rows that might slip through
+        if (sku.toLowerCase() === "sku" || sku.toLowerCase() === "skus") continue;
 
         result.push({
             sku,
@@ -397,9 +411,11 @@ function extractQuarantine(rows: string[][], anchor: SectionAnchor): QuarantineL
         const sku = cell(row, colMap, "sku");
         const lot = cell(row, colMap, "lot");
 
+        // Require at least a SKU and lot to create a row
         if (!sku || !lot) continue;
-        // Skip if the lot doesn't look like a valid lot pattern
-        if (!lot.toUpperCase().startsWith("PRORX")) continue;
+        
+        // Skip obvious header re-rows
+        if (sku.toLowerCase() === "sku" || sku.toLowerCase() === "skus") continue;
 
         let qtyRaw = cell(row, colMap, "qty");
         let reasonRaw = cell(row, colMap, "reason");
