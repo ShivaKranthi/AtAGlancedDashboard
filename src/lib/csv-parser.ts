@@ -403,10 +403,17 @@ function extractReleased(rows: string[][], anchor: SectionAnchor): ReleasedInven
 function extractQuarantine(rows: string[][], anchor: SectionAnchor): QuarantineLot[] {
     const result: QuarantineLot[] = [];
     const { dataStart, colMap, startCol } = anchor;
+    const maxCol = Math.max(startCol, ...Object.values(colMap));
 
     for (let r = dataStart; r < rows.length; r++) {
         const row = rows[r];
         if (!row) continue;
+
+        // Stop at blank left-side rows (section ended)
+        if (isRangeEmpty(row, startCol, maxCol)) continue;
+
+        // Stop at next section title in the left-column range
+        if (rowHasSectionTitle(row, startCol)) break;
 
         const sku = cell(row, colMap, "sku");
         const lot = cell(row, colMap, "lot");
