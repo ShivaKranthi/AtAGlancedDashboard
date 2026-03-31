@@ -43,6 +43,9 @@ export function ReportManager() {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState<number | null>(null);
     const [confirmId, setConfirmId] = useState<number | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+    const [deletingSelected, setDeletingSelected] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchReports = useCallback(async () => {
@@ -53,6 +56,7 @@ export function ReportManager() {
             if (!res.ok) throw new Error("Failed to fetch reports");
             const data = await res.json();
             setReports(data);
+            setSelectedIds(new Set());
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load reports");
         } finally {
@@ -82,6 +86,48 @@ export function ReportManager() {
         }
     };
 
+    const handleDeleteSelected = async () => {
+        setDeletingSelected(true);
+        setConfirmDeleteSelected(false);
+        setError(null);
+        let successCount = 0;
+        try {
+            for (const id of Array.from(selectedIds)) {
+                const res = await fetch(`/api/upload/${id}`, { method: "DELETE" });
+                if (!res.ok) {
+                    throw new Error(`Failed to delete report ${id}`);
+                }
+                successCount++;
+            }
+            setReports((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+            setSelectedIds(new Set());
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Delete selected failed");
+            // If partial deletion occurs, update table
+            if (successCount > 0) fetchReports();
+        } finally {
+            setDeletingSelected(false);
+        }
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedIds(new Set(reports.map(r => r.id)));
+        } else {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const handleSelectRow = (id: number, checked: boolean) => {
+        const next = new Set(selectedIds);
+        if (checked) {
+            next.add(id);
+        } else {
+            next.delete(id);
+        }
+        setSelectedIds(next);
+    };
+
     const totalRows = (r: Report) =>
         r.counts.pending + r.counts.released + r.counts.quarantine +
         r.counts.scheduled + r.counts.shipped + r.counts.perfectrx;
@@ -106,6 +152,33 @@ export function ReportManager() {
                         Uploaded Reports
                     </CardTitle>
                     <div className="flex items-center gap-2">
+                        {selectedIds.size > 0 && (
+                            confirmDeleteSelected ? (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={handleDeleteSelected}
+                                        disabled={deletingSelected}
+                                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-white bg-red-600 transition-colors hover:bg-red-700 disabled:opacity-50"
+                                    >
+                                        {deletingSelected ? <Loader2 className="h-3 w-3 animate-spin"/> : <Check className="h-3 w-3" />} Confirm Delete ({selectedIds.size})
+                                    </button>
+                                    <button
+                                        onClick={() => setConfirmDeleteSelected(false)}
+                                        disabled={deletingSelected}
+                                        className="flex items-center gap-1 rounded border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                                    >
+                                        <X className="h-3 w-3" /> Cancel
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setConfirmDeleteSelected(true)}
+                                    className="flex items-center gap-1 rounded border border-red-500/30 px-2 py-1 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                                >
+                                    <Trash2 className="h-3 w-3" /> Delete Selected ({selectedIds.size})
+                                </button>
+                            )
+                        )}
                         <Badge variant="secondary" className="text-xs">
                             {reports.length} report{reports.length !== 1 ? "s" : ""}
                         </Badge>
@@ -135,6 +208,14 @@ export function ReportManager() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-[40px]">
+                                        <input
+                                            type="checkbox"
+                                            checked={reports.length > 0 && selectedIds.size === reports.length}
+                                            onChange={(e) => handleSelectAll(e.target.checked)}
+                                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                    </TableHead>
                                     <TableHead className="w-10">#</TableHead>
                                     <TableHead>Report Date</TableHead>
                                     <TableHead>Filename</TableHead>
@@ -147,6 +228,14 @@ export function ReportManager() {
                             <TableBody>
                                 {reports.map((r) => (
                                     <TableRow key={r.id}>
+                                        <TableCell>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.has(r.id)}
+                                                onChange={(e) => handleSelectRow(r.id, e.target.checked)}
+                                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-mono text-xs text-muted-foreground">
                                             {r.id}
                                         </TableCell>
