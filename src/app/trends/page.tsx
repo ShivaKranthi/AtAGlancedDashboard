@@ -16,25 +16,11 @@ export default async function TrendsPage(props: { searchParams: Promise<{ [key: 
         );
     }
 
-    const scope = (searchParams?.scope as DateScope) || "day";
+    // Force 'week' scope if 'day' is requested
+    const rawScope = searchParams?.scope as DateScope;
+    const scope = (rawScope === "day" || !rawScope) ? "week" : rawScope;
     const dateStr = (searchParams?.date as string) || availableDates[0];
     const { start, end } = getScopeStartEnd(dateStr, scope);
-
-    if (scope === "day") {
-        return (
-            <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6">
-                <div className="text-center">
-                    <div className="mx-auto w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-4">
-                        <AlertTriangle className="h-8 w-8 text-orange-400" />
-                    </div>
-                    <h2 className="text-2xl font-bold">Trends require multiple dates</h2>
-                    <p className="max-w-md text-muted-foreground mt-2 text-sm">
-                        You have selected the &quot;Day&quot; snapshot view. To view historical trends and charts, please switch your scope to &quot;Week&quot; or &quot;Month&quot;.
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     const data = await getTrendData(start, end);
 

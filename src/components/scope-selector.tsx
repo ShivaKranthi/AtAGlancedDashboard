@@ -35,12 +35,18 @@ export function ScopeSelector({ availableDates }: ScopeSelectorProps) {
     const [tempScope, setTempScope] = useState<DateScope>("day");
     const [tempDate, setTempDate] = useState<string>("");
 
+    const isTrends = pathname.startsWith("/trends");
+
     useEffect(() => {
         if (open) {
-            setTempScope((activeScope as DateScope) || "day");
+            let initialScope = (activeScope as DateScope) || (isTrends ? "week" : "day");
+            if (isTrends && initialScope === "day") {
+                initialScope = "week";
+            }
+            setTempScope(initialScope);
             setTempDate(activeDate || (availableDates.length > 0 ? availableDates[0] : ""));
         }
-    }, [open, activeScope, activeDate, availableDates]);
+    }, [open, activeScope, activeDate, availableDates, isTrends]);
 
     const handleApply = () => {
         if (!tempDate) return;
@@ -94,7 +100,7 @@ export function ScopeSelector({ availableDates }: ScopeSelectorProps) {
                         <div className="flex flex-col gap-2">
                             <label className="text-sm font-semibold text-foreground/80">1. Timeframe</label>
                             <div className="flex rounded-md border border-white/10 p-1 bg-black/40">
-                                {["day", "week", "month"].map((s) => (
+                                {(isTrends ? ["week", "month"] : ["day", "week", "month"]).map((s) => (
                                     <button
                                         key={s}
                                         onClick={() => setTempScope(s as DateScope)}
@@ -127,7 +133,7 @@ export function ScopeSelector({ availableDates }: ScopeSelectorProps) {
                             <p className="text-[11px] text-muted-foreground">
                                 {tempScope === "week" && "Aggregates data for the week containing this date."}
                                 {tempScope === "month" && "Aggregates data for the month containing this date."}
-                                {tempScope === "day" && "Shows snapshot data for this specific day."}
+                                {tempScope === "day" && !isTrends && "Shows snapshot data for this specific day."}
                             </p>
                         </div>
                     </div>
