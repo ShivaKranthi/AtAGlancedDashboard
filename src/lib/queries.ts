@@ -200,6 +200,22 @@ export async function getAggregatedKpiSummary(data: NonNullable<Awaited<ReturnTy
     };
 }
 
+// ─── Get deduplicated shipments for a date range (used by Trends drill-down) ─
+export async function getShipmentDetails(startDate: string, endDate: string) {
+    const all = await db.select().from(shipments);
+    const seen = new Map<string, typeof all[number]>();
+    for (const s of all) {
+        if (!s.shipDate) continue;
+        const key = s.tracking ? s.tracking : `${s.sku}|${s.lot ?? "nolot"}|${s.shipDate}`;
+        if (!seen.has(key) || s.reportId > seen.get(key)!.reportId) {
+            seen.set(key, s);
+        }
+    }
+    return Array.from(seen.values()).filter(
+        s => s.shipDate! >= startDate && s.shipDate! <= endDate
+    );
+}
+
 // ─── Get Trend Data for Charts ────────────────────────────────────
 export async function getTrendData(startDate: string, endDate: string) {
     const reportReps = await db

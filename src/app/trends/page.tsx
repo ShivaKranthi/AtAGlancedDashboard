@@ -1,7 +1,6 @@
-import { getTrendData, getAvailableDates } from "@/lib/queries";
+import { getTrendData, getAvailableDates, getShipmentDetails } from "@/lib/queries";
 import { DateScope, getScopeStartEnd } from "@/lib/date-utils";
 import { TrendCharts } from "@/components/trends/trend-charts";
-import { AlertTriangle, TrendingUp } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +21,10 @@ export default async function TrendsPage(props: { searchParams: Promise<{ [key: 
     const dateStr = (searchParams?.date as string) || availableDates[0];
     const { start, end } = getScopeStartEnd(dateStr, scope);
 
-    const data = await getTrendData(start, end);
+    const [data, shipmentDetails] = await Promise.all([
+        getTrendData(start, end),
+        getShipmentDetails(start, end),
+    ]);
 
     if (data.length === 0) {
         return (
@@ -36,14 +38,14 @@ export default async function TrendsPage(props: { searchParams: Promise<{ [key: 
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Trends & Intelligence</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Trends &amp; Intelligence</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
                         {start} to {end} · {data.length} data points
                     </p>
                 </div>
             </div>
 
-            <TrendCharts data={data} scope={scope} />
+            <TrendCharts data={data} scope={scope} shipmentDetails={shipmentDetails} />
         </div>
     );
 }
