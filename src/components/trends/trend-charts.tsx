@@ -108,11 +108,12 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
 
     const totalSelectedVials = selectedShipments.reduce((s, r) => s + (r.shippedQuantity ?? 0), 0);
 
-    // ── Bar click handler ──────────────────────────────────────────────────
+    // ── Bar click handler — attached to <Bar>, not <BarChart> ───────────────
+    // Recharts Bar onClick receives { payload: TrendDataPoint, ... } as first arg.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleBarClick = useCallback((entry: any) => {
-        if (!entry?.activePayload?.[0]) return;
-        const date = entry.activePayload[0].payload.date as string;
+    const handleBarClick = useCallback((barData: any) => {
+        const date = barData?.payload?.date ?? barData?.date;
+        if (!date) return;
         setSelectedBar(date);
         setModalOpen(true);
     }, []);
@@ -222,8 +223,6 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
                             <BarChart
                                 data={data}
                                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                                onClick={handleBarClick}
-                                style={{ cursor: "pointer" }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
                                 <XAxis dataKey="date" tickFormatter={formatXAxis} tick={{fontSize: 11, fill: '#888'}} axisLine={false} tickLine={false} />
@@ -232,7 +231,13 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
                                     content={<ShipmentTooltip />}
                                     cursor={{ fill: 'rgba(99,102,241,0.08)' }}
                                 />
-                                <Bar dataKey="totalShipped" name="Shipped Vials" radius={[4, 4, 0, 0]}>
+                                <Bar
+                                    dataKey="totalShipped"
+                                    name="Shipped Vials"
+                                    radius={[4, 4, 0, 0]}
+                                    cursor="pointer"
+                                    onClick={handleBarClick}
+                                >
                                     {data.map((entry) => (
                                         <Cell
                                             key={entry.date}
@@ -268,7 +273,7 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
 
             {/* ── Shipment Drill-Down Modal ─────────────────────────────────── */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="max-w-4xl bg-slate-950 border-slate-800 p-0 overflow-hidden">
+                <DialogContent className="w-[95vw] max-w-5xl bg-slate-950 border-slate-800 p-0 overflow-hidden">
                     {/* Header */}
                     <div className="relative px-6 pt-6 pb-4 border-b border-slate-800 bg-linear-to-r from-indigo-500/10 to-transparent">
                         <DialogHeader>
@@ -301,6 +306,7 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
                                     <p className="text-xs">The ship date may not match any recorded shipments for {selectedDateLabel}.</p>
                                 </div>
                             ) : (
+                                <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="border-slate-800 hover:bg-transparent">
@@ -350,7 +356,7 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
                                                     </TableCell>
                                                     <TableCell>
                                                         {s.tracking
-                                                            ? <span className="font-mono text-[10px] text-slate-400 truncate block max-w-[160px]">{s.tracking}</span>
+                                                            ? <span className="font-mono text-[10px] text-slate-400 break-all">{s.tracking}</span>
                                                             : <span className="text-slate-600 text-sm">—</span>
                                                         }
                                                     </TableCell>
@@ -359,6 +365,7 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
                                         }
                                     </TableBody>
                                 </Table>
+                                </div>
                             )}
                         </div>
                     </ScrollArea>
