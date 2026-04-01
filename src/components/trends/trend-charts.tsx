@@ -13,7 +13,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { parseISO, format, isWithinInterval } from "date-fns";
 import { Truck, Package, Hash, CalendarDays, ExternalLink } from "lucide-react";
 
@@ -297,7 +296,7 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
                     </div>
 
                     {/* Table */}
-                    <ScrollArea className="max-h-[60vh]">
+                    <div className="max-h-[60vh] overflow-y-auto">
                         <div className="px-6 py-4">
                             {selectedShipments.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-500">
@@ -368,7 +367,7 @@ export function TrendCharts({ data, scope, shipmentDetails }: Props) {
                                 </div>
                             )}
                         </div>
-                    </ScrollArea>
+                    </div>
 
                     {/* Footer totals bar */}
                     {selectedShipments.length > 0 && (
