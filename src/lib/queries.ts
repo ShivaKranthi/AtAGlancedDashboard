@@ -60,6 +60,17 @@ export async function getKpiSummary(reportId: number) {
     const [report] = await db.select().from(reports).where(eq(reports.id, reportId));
     const targetDate = report?.reportDate;
 
+    const allShippedGlobally = await db.select().from(shipments);
+    const uniqueGlobalShipmentsMap = new Map();
+    for (const s of allShippedGlobally) {
+        if (!s.shipDate) continue;
+        const id = s.tracking ? s.tracking : `${s.sku}|${s.lot ?? "nolot"}|${s.shipDate}`;
+        if (!uniqueGlobalShipmentsMap.has(id) || s.reportId > uniqueGlobalShipmentsMap.get(id).reportId) {
+            uniqueGlobalShipmentsMap.set(id, s);
+        }
+    }
+    const globalValidShipments = Array.from(uniqueGlobalShipmentsMap.values());
+
     const totalReleased = data.released.reduce(
         (sum, r) => sum + (r.quantityAvailable ?? 0),
         0
@@ -72,11 +83,9 @@ export async function getKpiSummary(reportId: number) {
         (sum, r) => sum + (r.quantity ?? 0),
         0
     );
-    // Filter shipment calculation by exact report date
-    const totalShipped = data.shipped.reduce(
-        (sum, r) => sum + (r.shipDate === targetDate ? (r.shippedQuantity ?? 0) : 0),
-        0
-    );
+    // Filter global shipment calculation by exact report date
+    const filteredShipments = globalValidShipments.filter((s) => s.shipDate === targetDate);
+    const totalShipped = filteredShipments.reduce((sum, r) => sum + (r.shippedQuantity ?? 0), 0);
     const totalQuarantine = data.quarantine.reduce(
         (sum, r) => sum + (r.quantity ?? 0),
         0
@@ -96,7 +105,7 @@ export async function getKpiSummary(reportId: number) {
         criticalSkus,
         lotsInQuarantine: data.quarantine.length,
         lotsPending: data.pending.length,
-        shipmentsCount: data.shipped.length,
+        shipmentsCount: filteredShipments.length, // count of deduplicated, date-matched shipments
     };
 }
 
@@ -129,20 +138,29 @@ export async function getAggregatedReportData(startDate: string, endDate: string
         quarantine,
         perfectrx,
         scheduled,
-        shippedRaw,
+        allShippedGlobally,
     ] = await Promise.all([
         db.select().from(lotsPendingRelease).where(eq(lotsPendingRelease.reportId, latestReportId)),
         db.select().from(releasedInventory).where(eq(releasedInventory.reportId, latestReportId)),
         db.select().from(lotsInQuarantine).where(eq(lotsInQuarantine.reportId, latestReportId)),
         db.select().from(perfectrxInventory).where(eq(perfectrxInventory.reportId, latestReportId)),
         db.select().from(skusOnSchedule).where(eq(skusOnSchedule.reportId, latestReportId)),
-        db.select().from(shipments).where(eq(shipments.reportId, latestReportId)),
+        db.select().from(shipments), // Fetch ALL shipments globally to avoid missing delayed entries
     ]);
 
-    // Filter shipments to only include ones that shipped within the [startDate, endDate] range.
-    const shipped = shippedRaw.filter(s => {
-        if (!s.shipDate) return false;
-        return s.shipDate >= startDate && s.shipDate <= endDate;
+    // Deduplicate globally across all reports
+    const uniqueGlobalShipmentsMap = new Map();
+    for (const s of allShippedGlobally) {
+        if (!s.shipDate) continue;
+        const id = s.tracking ? s.tracking : `${s.sku}|${s.lot ?? "nolot"}|${s.shipDate}`;
+        if (!uniqueGlobalShipmentsMap.has(id) || s.reportId > uniqueGlobalShipmentsMap.get(id).reportId) {
+            uniqueGlobalShipmentsMap.set(id, s);
+        }
+    }
+
+    // Filter deduplicated shipments to only include ones that shipped within the [startDate, endDate] range
+    const shipped = Array.from(uniqueGlobalShipmentsMap.values()).filter(s => {
+        return s.shipDate! >= startDate && s.shipDate! <= endDate;
     });
 
     return { 
@@ -192,13 +210,23 @@ export async function getTrendData(startDate: string, endDate: string) {
 
     if (reportReps.length === 0) return [];
 
+    const allShippedGlobally = await db.select().from(shipments);
+    const uniqueGlobalShipmentsMap = new Map();
+    for (const s of allShippedGlobally) {
+        if (!s.shipDate) continue;
+        const id = s.tracking ? s.tracking : `${s.sku}|${s.lot ?? "nolot"}|${s.shipDate}`;
+        if (!uniqueGlobalShipmentsMap.has(id) || s.reportId > uniqueGlobalShipmentsMap.get(id).reportId) {
+            uniqueGlobalShipmentsMap.set(id, s);
+        }
+    }
+    const globalValidShipments = Array.from(uniqueGlobalShipmentsMap.values());
+
     const trendData = [];
     for (const r of reportReps) {
         // Can make this more efficient by fetching all and grouping, but sequential is okay since SQLite/PG is fast locally and it's a small scale.
         const pending = await db.select({ quantity: lotsPendingRelease.quantity }).from(lotsPendingRelease).where(eq(lotsPendingRelease.reportId, r.id));
         const released = await db.select({ quantityAvailable: releasedInventory.quantityAvailable }).from(releasedInventory).where(eq(releasedInventory.reportId, r.id));
         const quarantine = await db.select({ quantity: lotsInQuarantine.quantity }).from(lotsInQuarantine).where(eq(lotsInQuarantine.reportId, r.id));
-        const shippedRaw = await db.select({ shippedQuantity: shipments.shippedQuantity, shipDate: shipments.shipDate }).from(shipments).where(eq(shipments.reportId, r.id));
         const perfectrx = await db.select({ daysSupply: perfectrxInventory.daysSupply, runRate30d: perfectrxInventory.runRate30d }).from(perfectrxInventory).where(eq(perfectrxInventory.reportId, r.id));
 
         const totalPending = pending.reduce((sum, p) => sum + (p.quantity ?? 0), 0);
@@ -206,7 +234,9 @@ export async function getTrendData(startDate: string, endDate: string) {
         const totalQuarantine = quarantine.reduce((sum, q) => sum + (q.quantity ?? 0), 0);
         
         // Match shipments to exactly this report's date to avoid cumulative trend lines!
-        const totalShipped = shippedRaw.reduce((sum, s) => sum + (s.shipDate === r.reportDate ? (s.shippedQuantity ?? 0) : 0), 0);
+        const totalShipped = globalValidShipments
+            .filter((s) => s.shipDate === r.reportDate)
+            .reduce((sum, s) => sum + (s.shippedQuantity ?? 0), 0);
         
         const totalVials = totalPending + totalReleased + totalQuarantine;
         
