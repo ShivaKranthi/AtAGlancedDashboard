@@ -8,7 +8,7 @@ import {
     shipments,
     perfectrxInventory,
 } from "@/db/schema";
-import { desc, eq, sql, between, inArray, asc } from "drizzle-orm";
+import { desc, eq, between, asc } from "drizzle-orm";
 
 // ─── Get latest report ────────────────────────────────────────────
 
@@ -56,6 +56,9 @@ export async function getReportData(reportId: number) {
 
 export async function getKpiSummary(reportId: number) {
     const data = await getReportData(reportId);
+    
+    const [report] = await db.select().from(reports).where(eq(reports.id, reportId));
+    const targetDate = report?.reportDate;
 
     const totalReleased = data.released.reduce(
         (sum, r) => sum + (r.quantityAvailable ?? 0),
@@ -69,8 +72,9 @@ export async function getKpiSummary(reportId: number) {
         (sum, r) => sum + (r.quantity ?? 0),
         0
     );
+    // Filter shipment calculation by exact report date
     const totalShipped = data.shipped.reduce(
-        (sum, r) => sum + (r.shippedQuantity ?? 0),
+        (sum, r) => sum + (r.shipDate === targetDate ? (r.shippedQuantity ?? 0) : 0),
         0
     );
     const totalQuarantine = data.quarantine.reduce(
@@ -116,10 +120,8 @@ export async function getAggregatedReportData(startDate: string, endDate: string
 
     if (reportReps.length === 0) return null;
 
-    // Use latest snapshot for inventory statuses
+    // Use latest snapshot for inventory statuses and datasets
     const latestReportId = reportReps[0].id; // 0 is latest because desc
-
-    const allReportIds = reportReps.map(r => r.id);
 
     const [
         pending,
@@ -127,15 +129,21 @@ export async function getAggregatedReportData(startDate: string, endDate: string
         quarantine,
         perfectrx,
         scheduled,
-        shipped,
+        shippedRaw,
     ] = await Promise.all([
         db.select().from(lotsPendingRelease).where(eq(lotsPendingRelease.reportId, latestReportId)),
         db.select().from(releasedInventory).where(eq(releasedInventory.reportId, latestReportId)),
         db.select().from(lotsInQuarantine).where(eq(lotsInQuarantine.reportId, latestReportId)),
         db.select().from(perfectrxInventory).where(eq(perfectrxInventory.reportId, latestReportId)),
-        db.select().from(skusOnSchedule).where(inArray(skusOnSchedule.reportId, allReportIds)),
-        db.select().from(shipments).where(inArray(shipments.reportId, allReportIds)),
+        db.select().from(skusOnSchedule).where(eq(skusOnSchedule.reportId, latestReportId)),
+        db.select().from(shipments).where(eq(shipments.reportId, latestReportId)),
     ]);
+
+    // Filter shipments to only include ones that shipped within the [startDate, endDate] range.
+    const shipped = shippedRaw.filter(s => {
+        if (!s.shipDate) return false;
+        return s.shipDate >= startDate && s.shipDate <= endDate;
+    });
 
     return { 
         pending, 
@@ -170,7 +178,7 @@ export async function getAggregatedKpiSummary(data: NonNullable<Awaited<ReturnTy
         criticalSkus,
         lotsInQuarantine: data.quarantine.length,
         lotsPending: data.pending.length,
-        shipmentsCount: data.shipped.length,
+        shipmentsCount: data.shipped.length, // filtered correctly now
     };
 }
 
@@ -190,13 +198,16 @@ export async function getTrendData(startDate: string, endDate: string) {
         const pending = await db.select({ quantity: lotsPendingRelease.quantity }).from(lotsPendingRelease).where(eq(lotsPendingRelease.reportId, r.id));
         const released = await db.select({ quantityAvailable: releasedInventory.quantityAvailable }).from(releasedInventory).where(eq(releasedInventory.reportId, r.id));
         const quarantine = await db.select({ quantity: lotsInQuarantine.quantity }).from(lotsInQuarantine).where(eq(lotsInQuarantine.reportId, r.id));
-        const shipped = await db.select({ shippedQuantity: shipments.shippedQuantity }).from(shipments).where(eq(shipments.reportId, r.id));
+        const shippedRaw = await db.select({ shippedQuantity: shipments.shippedQuantity, shipDate: shipments.shipDate }).from(shipments).where(eq(shipments.reportId, r.id));
         const perfectrx = await db.select({ daysSupply: perfectrxInventory.daysSupply, runRate30d: perfectrxInventory.runRate30d }).from(perfectrxInventory).where(eq(perfectrxInventory.reportId, r.id));
 
         const totalPending = pending.reduce((sum, p) => sum + (p.quantity ?? 0), 0);
         const totalReleased = released.reduce((sum, rel) => sum + (rel.quantityAvailable ?? 0), 0);
         const totalQuarantine = quarantine.reduce((sum, q) => sum + (q.quantity ?? 0), 0);
-        const totalShipped = shipped.reduce((sum, s) => sum + (s.shippedQuantity ?? 0), 0);
+        
+        // Match shipments to exactly this report's date to avoid cumulative trend lines!
+        const totalShipped = shippedRaw.reduce((sum, s) => sum + (s.shipDate === r.reportDate ? (s.shippedQuantity ?? 0) : 0), 0);
+        
         const totalVials = totalPending + totalReleased + totalQuarantine;
         
         let avgDaysSupply = 0;
