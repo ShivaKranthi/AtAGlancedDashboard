@@ -101,6 +101,8 @@ export function KpiStrip({
   pendingData = [],
   releasedData = [],
   shippedData = [],
+  shippedWeekStart,
+  shippedWeekEnd,
   quarantineData = []
 }: { 
     data: KpiData; 
@@ -111,6 +113,8 @@ export function KpiStrip({
     releasedData?: any[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shippedData?: any[];
+    shippedWeekStart?: string;
+    shippedWeekEnd?: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     quarantineData?: any[];
 }) {
@@ -220,7 +224,11 @@ export function KpiStrip({
                 isOpen={activeModal === "shipped"}
                 onOpenChange={(v) => !v && setActiveModal("none")}
                 title="Shipped to PerfectRx"
-                description="Shipments fulfilling PerfectRx orders."
+                description={
+                    shippedWeekStart && shippedWeekEnd
+                        ? `Weekly shipments: ${shippedWeekStart} to ${shippedWeekEnd} · deduplicated across all report sheets`
+                        : "Shipments fulfilling PerfectRx orders."
+                }
                 icon={<Truck className="w-5 h-5 text-orange-400" />}
                 data={shippedData}
                 totalVials={data.totalShipped}
@@ -228,11 +236,11 @@ export function KpiStrip({
                 skuExtractor={(row) => row.sku}
                 lotExtractor={(row) => row.lot || row.tracking}
                 columns={[
+                    { header: "Ship Date", accessor: (row) => row.shipDate || "—" },
                     { header: "SKU", accessor: (row) => <span className="font-medium text-white">{row.sku}</span> },
                     { header: "Lot", accessor: (row) => <span className="font-mono text-xs">{row.lot || "—"}</span> },
                     { header: "Requested", accessor: (row) => formatNumber(row.shipQuantity), className: "text-right" },
                     { header: "Shipped", accessor: (row) => <span className="font-semibold text-orange-400">{formatNumber(row.shippedQuantity)}</span>, className: "text-right" },
-                    { header: "Ship Date", accessor: (row) => row.shipDate || "—" },
                     { header: "Tracking", accessor: (row) => <span className="font-mono text-[10px] text-slate-400">{row.tracking || "—"}</span> }
                 ]}
             />

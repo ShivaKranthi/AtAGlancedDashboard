@@ -120,7 +120,9 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         scheduledData={data.scheduled} 
         pendingData={data.pending}
         releasedData={data.released}
-        shippedData={data.shipped}
+        shippedData={data.weeklyShipped}
+        shippedWeekStart={data.weekStart}
+        shippedWeekEnd={data.weekEnd}
         quarantineData={data.quarantine}
       />
 

@@ -190,6 +190,7 @@ export async function getAggregatedReportData(startDate: string, endDate: string
         perfectrx, 
         scheduled, 
         shipped,
+        weeklyShipped,
         weeklyShippedTotal,
         weeklyShipmentsCount,
         weekStart,
