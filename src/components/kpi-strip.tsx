@@ -75,8 +75,8 @@ const kpiConfig: {
             key: "totalShipped",
             label: "Shipped to PerfectRx",
             tooltip:
-                "Total vials that have been shipped from the compounding facility to PerfectRx for fulfillment and distribution. Includes requested and actual shipped quantities with tracking numbers.",
-            sub: (d) => `${d.shipmentsCount} shipments`,
+                "Total vials shipped to PerfectRx for the full week containing the selected report date. Calculated from the Ship Date column across all uploaded report sheets — duplicates are removed automatically.",
+            sub: (d) => `${d.shipmentsCount} shipments this week`,
             accent: "from-orange-400 to-yellow-400",
             valueColor: "text-orange-400",
             iconColor: "text-orange-400 bg-orange-400/10",

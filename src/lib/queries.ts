@@ -9,6 +9,16 @@ import {
     perfectrxInventory,
 } from "@/db/schema";
 import { desc, eq, between, asc } from "drizzle-orm";
+import { format, parseISO, startOfWeek, endOfWeek } from "date-fns";
+
+/** Compute the Monday–Sunday week range containing a YYYY-MM-DD string. */
+function getWeekRange(dateStr: string): { weekStart: string; weekEnd: string } {
+    const d = parseISO(dateStr);
+    return {
+        weekStart: format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+        weekEnd:   format(endOfWeek(d,   { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    };
+}
 
 // ─── Get latest report ────────────────────────────────────────────
 
@@ -163,6 +173,16 @@ export async function getAggregatedReportData(startDate: string, endDate: string
         return s.shipDate! >= startDate && s.shipDate! <= endDate;
     });
 
+    // ── Weekly shipped total for the KPI summary card ────────────────────
+    // Always computed for the full Mon-Sun week that contains `endDate`,
+    // regardless of the active scope (day / week / month).
+    const { weekStart, weekEnd } = getWeekRange(endDate);
+    const weeklyShipped = Array.from(uniqueGlobalShipmentsMap.values()).filter(s => {
+        return s.shipDate! >= weekStart && s.shipDate! <= weekEnd;
+    });
+    const weeklyShippedTotal = weeklyShipped.reduce((sum, s) => sum + (s.shippedQuantity ?? 0), 0);
+    const weeklyShipmentsCount = weeklyShipped.length;
+
     return { 
         pending, 
         released, 
@@ -170,6 +190,10 @@ export async function getAggregatedReportData(startDate: string, endDate: string
         perfectrx, 
         scheduled, 
         shipped,
+        weeklyShippedTotal,
+        weeklyShipmentsCount,
+        weekStart,
+        weekEnd,
         reportCount: reportReps.length,
         latestReportDate: reportReps[0].reportDate
     };
@@ -177,11 +201,14 @@ export async function getAggregatedReportData(startDate: string, endDate: string
 
 // ─── Get KPI summary for aggregated data ──────────────────────────
 export async function getAggregatedKpiSummary(data: NonNullable<Awaited<ReturnType<typeof getAggregatedReportData>>>) {
-    const totalReleased = data.released.reduce((sum, r) => sum + (r.quantityAvailable ?? 0), 0);
-    const totalPending = data.pending.reduce((sum, r) => sum + (r.quantity ?? 0), 0);
+    const totalReleased  = data.released.reduce((sum, r) => sum + (r.quantityAvailable ?? 0), 0);
+    const totalPending   = data.pending.reduce((sum, r)  => sum + (r.quantity ?? 0), 0);
     const totalScheduled = data.scheduled.reduce((sum, r) => sum + (r.quantity ?? 0), 0);
-    const totalShipped = data.shipped.reduce((sum, r) => sum + (r.shippedQuantity ?? 0), 0);
     const totalQuarantine = data.quarantine.reduce((sum, r) => sum + (r.quantity ?? 0), 0);
+
+    // KPI card always shows the full-week total, not just the scoped-date total.
+    const totalShipped    = data.weeklyShippedTotal;
+    const shipmentsCount  = data.weeklyShipmentsCount;
 
     const criticalSkus = data.perfectrx.filter(
         (p) => p.daysSupply !== null && p.daysSupply < 7 && (p.runRate30d ?? 0) > 0
@@ -196,7 +223,7 @@ export async function getAggregatedKpiSummary(data: NonNullable<Awaited<ReturnTy
         criticalSkus,
         lotsInQuarantine: data.quarantine.length,
         lotsPending: data.pending.length,
-        shipmentsCount: data.shipped.length, // filtered correctly now
+        shipmentsCount, // weekly count
     };
 }
 
